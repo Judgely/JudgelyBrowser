@@ -1,0 +1,764 @@
+<!--
+  ============================================================
+  README: Browser Environment Dashboard — browser_dashboard.html
+  ============================================================
+  Author  : Judgely Peñero Fermato
+  Course  : BSIT-2D
+  School  : Partido State University
+  Semester: 2nd Semester, AY 2025-2026
+  Instructor: Arjay Abio
+
+  Description:
+    A single-file Browser Environment Dashboard that uses
+    core JavaScript browser objects to display real-time
+    information about the browser, screen, current page,
+    and navigation history. Also includes interactive
+    controls for navigation and dynamic background theming.
+
+  Browser Objects Used:
+    navigator — browser name, version, platform, java
+    screen    — resolution, available size, color depth
+    document  — page title, referrer
+    location  — URL, hostname, protocol
+    history   — session history length, back/forward
+    window    — size, scroll position, resize events
+
+  Sections:
+    Part 0 — Student Profile Header
+    Part A — Browser & Screen Information
+    Part B — Page Information & Title Control
+    Part C — Navigation Controls
+    Part D — Dynamic Background by Viewport Width
+
+  Requirements Met:
+    [x] Single HTML file with embedded CSS and JavaScript
+    [x] Clear, readable code with proper HTML structure
+    [x] JavaScript comments explaining each section
+    [x] Appropriate styling for visibility and layout
+    [x] README comment at top of file
+    [x] Mobile/Android optimized
+  ============================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Browser Environment Dashboard — Judgely Peñero Fermato</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* =====================================================
+       CSS VARIABLES — central theme colours and fonts
+    ===================================================== */
+    :root {
+      --bg:           #0a0e0a;
+      --panel:        #0f1810;
+      --border:       #1e3a1e;
+      --green:        #39ff14;
+      --green-dim:    #1a7a00;
+      --amber:        #ffb700;
+      --red:          #ff3a3a;
+      --blue:         #4488ff;
+      --text:         #c8e6c8;
+      --muted:        #4a7a4a;
+      --font-mono:    'Share Tech Mono', monospace;
+      --font-display: 'Orbitron', sans-serif;
+    }
+
+    /* =====================================================
+       RESET
+    ===================================================== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* =====================================================
+       BODY
+    ===================================================== */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.5s;
+      -webkit-tap-highlight-color: transparent; /* Android tap fix */
+    }
+
+    /* Decorative scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* =====================================================
+       PART 0 — PROFILE HEADER
+    ===================================================== */
+    .profile-header {
+      background: linear-gradient(135deg, #061206 0%, #0d1f0d 100%);
+      border-bottom: 2px solid var(--green);
+      padding: 20px 16px;
+    }
+    .profile-header h1 {
+      font-family: var(--font-display);
+      font-size: 9px;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+    .profile-name {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--green);
+      margin-bottom: 16px;
+      text-shadow: 0 0 16px rgba(57,255,20,0.4);
+      line-height: 1.3;
+    }
+    .profile-row {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-label {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .profile-value {
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* =====================================================
+       MAIN LAYOUT — single column for mobile
+    ===================================================== */
+    main {
+      padding: 16px 12px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* =====================================================
+       PANEL — card container for each part
+    ===================================================== */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .panel-header {
+      background: var(--border);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--green-dim);
+    }
+    .panel-tag {
+      font-family: var(--font-display);
+      font-size: 8px;
+      color: var(--green);
+      background: rgba(57,255,20,0.1);
+      border: 1px solid var(--green-dim);
+      padding: 3px 8px;
+      letter-spacing: 2px;
+      border-radius: 2px;
+    }
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 10px;
+      color: var(--text);
+      letter-spacing: 2px;
+    }
+    .panel-body { padding: 14px; }
+
+    /* =====================================================
+       DATA ROW — label stacked above value
+    ===================================================== */
+    .data-row {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-row:last-of-type { border-bottom: none; }
+    .data-key {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+    .data-val {
+      color: var(--green);
+      font-size: 13px;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .data-val.amber { color: var(--amber); }
+    .data-val.red   { color: var(--red);   }
+    .data-val.blue  { color: var(--blue);  }
+
+    /* =====================================================
+       BUTTONS — large touch targets for Android
+    ===================================================== */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px 16px;
+      border: 1px solid var(--green-dim);
+      background: transparent;
+      color: var(--green);
+      cursor: pointer;
+      letter-spacing: 1px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      min-height: 44px; /* Android touch target */
+    }
+    .btn:active { background: rgba(57,255,20,0.15); border-color: var(--green); }
+    .btn.amber  { border-color: #7a5500; color: var(--amber); }
+    .btn.amber:active { background: rgba(255,183,0,0.15); border-color: var(--amber); }
+    .btn.red    { border-color: #7a1a1a; color: var(--red); }
+    .btn.red:active   { background: rgba(255,58,58,0.15);  border-color: var(--red); }
+    .btn.blue   { border-color: #223388; color: var(--blue); }
+    .btn.blue:active  { background: rgba(68,136,255,0.15); border-color: var(--blue); }
+
+    /* Sub-section label inside a panel */
+    .section-label {
+      color: var(--muted);
+      font-size: 10px;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* =====================================================
+       VIEWPORT BAR — fixed bottom colour indicator
+    ===================================================== */
+    #viewport-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 5px;
+      transition: background 0.4s;
+      z-index: 100;
+    }
+    #viewport-label {
+      position: fixed;
+      bottom: 12px; right: 12px;
+      font-family: var(--font-display);
+      font-size: 8px;
+      letter-spacing: 2px;
+      padding: 4px 10px;
+      border-radius: 3px;
+      transition: all 0.4s;
+      z-index: 101;
+    }
+
+    /* Legend colour dot */
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* Blinking cursor animation */
+    .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+
+  <!-- ====================================================
+       PART 0: STUDENT PROFILE HEADER
+       Displays complete student identification info
+  ==================================================== -->
+  <header class="profile-header">
+    <h1>// Browser Environment Dashboard — Student Profile</h1>
+    <div class="profile-name">Judgely Peñero Fermato</div>
+
+    <div class="profile-row">
+      <span class="profile-label">Complete Name</span>
+      <span class="profile-value">Judgely Peñero Fermato</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Sex</span>
+      <span class="profile-value">Male</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Address</span>
+      <span class="profile-value">314, Zone 4, Lagonoy, Camarines Sur</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Course, Year and Section</span>
+      <span class="profile-value">BSIT-2D</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Name of School</span>
+      <span class="profile-value">Partido State University</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Semester and Academic Year</span>
+      <span class="profile-value">2nd Semester, AY 2025–2026</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Subject Code and Title</span>
+      <span class="profile-value">(To be filled)</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">Name of Subject Instructor</span>
+      <span class="profile-value">Arjay Abio</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ====================================================
+         PART A: BROWSER & SCREEN INFORMATION
+         Uses: navigator, screen
+    ==================================================== -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-tag">PART A</span>
+        <span class="panel-title">BROWSER &amp; SCREEN INFO</span>
+      </div>
+      <div class="panel-body">
+        <div class="data-row">
+          <span class="data-key">Browser Name &amp; Version</span>
+          <span class="data-val" id="a-browser">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">User Agent</span>
+          <span class="data-val" id="a-ua" style="font-size:11px;">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Platform (OS)</span>
+          <span class="data-val" id="a-platform">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Java Enabled</span>
+          <span class="data-val" id="a-java">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Screen Resolution</span>
+          <span class="data-val" id="a-resolution">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Available Screen Size</span>
+          <span class="data-val" id="a-avail">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Color Depth</span>
+          <span class="data-val" id="a-color">Loading...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         PART B: PAGE INFORMATION AND CONTROLS
+         Uses: document, location, window
+    ==================================================== -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-tag">PART B</span>
+        <span class="panel-title">PAGE INFORMATION</span>
+      </div>
+      <div class="panel-body">
+        <div class="data-row">
+          <span class="data-key">Current URL</span>
+          <span class="data-val amber" id="b-url" style="font-size:11px;">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Hostname</span>
+          <span class="data-val amber" id="b-host">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Protocol</span>
+          <span class="data-val amber" id="b-protocol">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Current Page Title</span>
+          <span class="data-val amber" id="b-title">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Referrer</span>
+          <span class="data-val amber" id="b-referrer">Loading...</span>
+        </div>
+
+        <!-- Button to change page title dynamically -->
+        <p class="section-label">// Title Control</p>
+        <div class="btn-group">
+          <button class="btn amber" onclick="changeTitle()">✎ Change Page Title</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         PART C: NAVIGATION CONTROLS
+         Uses: location, history, window
+    ==================================================== -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-tag">PART C</span>
+        <span class="panel-title">NAVIGATION CONTROLS</span>
+      </div>
+      <div class="panel-body">
+        <div class="data-row">
+          <span class="data-key">History Length</span>
+          <span class="data-val" id="c-history">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Window Size</span>
+          <span class="data-val" id="c-winsize">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Scroll Position</span>
+          <span class="data-val" id="c-scroll">Loading...</span>
+        </div>
+
+        <!-- Reload and Redirect -->
+        <p class="section-label">// Page Controls</p>
+        <div class="btn-group">
+          <button class="btn" onclick="location.reload()">↺ Reload Page</button>
+          <button class="btn amber" onclick="redirectPage()">⤷ Redirect to URL</button>
+        </div>
+
+        <!-- Back and Forward history navigation -->
+        <p class="section-label">// History Navigation</p>
+        <div class="btn-group">
+          <button class="btn blue" onclick="history.back()">← Go Back</button>
+          <button class="btn blue" onclick="history.forward()">Go Forward →</button>
+        </div>
+
+        <!-- Open new tab -->
+        <p class="section-label">// Open New Tab</p>
+        <div class="btn-group">
+          <button class="btn red" onclick="window.open('https://www.example.com','_blank')">⊕ Open Example.com</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+         PART D: DYNAMIC STYLING WITH SCREEN INFO
+         Changes background based on viewport width
+         Mobile (<600px): Blue
+         Tablet (600-991px): Green
+         Desktop (>=992px): Orange
+    ==================================================== -->
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-tag">PART D</span>
+        <span class="panel-title">DYNAMIC STYLING</span>
+      </div>
+      <div class="panel-body">
+        <div class="data-row">
+          <span class="data-key">Viewport Width</span>
+          <span class="data-val" id="d-width">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Viewport Height</span>
+          <span class="data-val" id="d-height">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Device Type</span>
+          <span class="data-val" id="d-device">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Active Background Color</span>
+          <span class="data-val" id="d-theme">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Pixel Ratio</span>
+          <span class="data-val" id="d-dpr">Loading...</span>
+        </div>
+        <div class="data-row">
+          <span class="data-key">Orientation</span>
+          <span class="data-val" id="d-orient">Loading...</span>
+        </div>
+
+        <!-- Breakpoint legend -->
+        <p class="section-label" style="margin-top:14px;">// Breakpoint Rules</p>
+        <div style="margin-top:8px; font-size:12px; line-height:2.4;">
+          <div>
+            <span class="legend-dot" style="background:#4488ff;"></span>
+            &lt; 600px &nbsp;→&nbsp; <span style="color:#4488ff;">Mobile — Blue</span>
+          </div>
+          <div>
+            <span class="legend-dot" style="background:#22cc44;"></span>
+            600 – 991px → <span style="color:#22cc44;">Tablet — Green</span>
+          </div>
+          <div>
+            <span class="legend-dot" style="background:#ffb700;"></span>
+            ≥ 992px &nbsp;&nbsp;→&nbsp; <span style="color:#ffb700;">Desktop — Orange</span>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--green); font-size:11px;">● LIVE — rotate device to see changes</span>
+          <span class="blink" style="color:var(--green);">_</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Fixed bottom viewport colour bar -->
+  <div id="viewport-bar"></div>
+  <div id="viewport-label"></div>
+
+  <script>
+    // ============================================================
+    // PART A — Browser & Screen Information
+    // Objects used: navigator, screen
+    // ============================================================
+
+    // Detect browser name and version from the user agent string
+    function detectBrowser() {
+      var ua = navigator.userAgent;
+
+      // Android Chrome must be checked before generic Chrome
+      if (ua.indexOf('Android') !== -1 && ua.indexOf('Chrome') !== -1) {
+        var v = ua.match(/Chrome\/([\d.]+)/);
+        return 'Chrome for Android v' + (v ? v[1] : '?');
+      }
+      // Samsung Internet browser
+      if (ua.indexOf('SamsungBrowser') !== -1) {
+        var v = ua.match(/SamsungBrowser\/([\d.]+)/);
+        return 'Samsung Internet v' + (v ? v[1] : '?');
+      }
+      // Firefox (desktop or Android)
+      if (ua.indexOf('Firefox') !== -1) {
+        var v = ua.match(/Firefox\/([\d.]+)/);
+        return 'Mozilla Firefox v' + (v ? v[1] : '?');
+      }
+      // Microsoft Edge
+      if (ua.indexOf('Edg/') !== -1) {
+        var v = ua.match(/Edg\/([\d.]+)/);
+        return 'Microsoft Edge v' + (v ? v[1] : '?');
+      }
+      // Desktop Chrome
+      if (ua.indexOf('Chrome') !== -1) {
+        var v = ua.match(/Chrome\/([\d.]+)/);
+        return 'Google Chrome v' + (v ? v[1] : '?');
+      }
+      // Safari
+      if (ua.indexOf('Safari') !== -1) {
+        var v = ua.match(/Version\/([\d.]+)/);
+        return 'Apple Safari v' + (v ? v[1] : '?');
+      }
+      return 'Unknown Browser';
+    }
+
+    function loadPartA() {
+      // Browser name and version via navigator.userAgent
+      document.getElementById('a-browser').textContent = detectBrowser();
+
+      // Full user agent string from navigator
+      document.getElementById('a-ua').textContent = navigator.userAgent;
+
+      // Platform — Android returns "Linux aarch64" which is correct
+      document.getElementById('a-platform').textContent = navigator.platform || 'N/A';
+
+      // Java enabled check — most modern browsers return false or unsupported
+      var javaEl  = document.getElementById('a-java');
+      var javaVal = 'Not Supported';
+      if (typeof navigator.javaEnabled === 'function') {
+        javaVal = navigator.javaEnabled() ? 'YES' : 'NO';
+      }
+      javaEl.textContent = javaVal;
+      javaEl.className   = (javaVal === 'YES') ? 'data-val' : 'data-val red';
+
+      // Screen resolution using screen.width and screen.height
+      document.getElementById('a-resolution').textContent =
+        screen.width + ' x ' + screen.height + ' px';
+
+      // Available screen size — excludes browser UI and taskbar
+      document.getElementById('a-avail').textContent =
+        screen.availWidth + ' x ' + screen.availHeight + ' px';
+
+      // Colour depth in bits from screen.colorDepth
+      document.getElementById('a-color').textContent =
+        screen.colorDepth + '-bit';
+    }
+
+    // ============================================================
+    // PART B — Page Information & Title Control
+    // Objects used: document, location
+    // ============================================================
+
+    function loadPartB() {
+      // Full current URL from location.href
+      document.getElementById('b-url').textContent = location.href;
+
+      // Hostname from location.hostname (empty when opened as local file)
+      document.getElementById('b-host').textContent =
+        location.hostname !== '' ? location.hostname : 'localhost (file://)';
+
+      // Protocol from location.protocol (e.g. "https:" or "file:")
+      document.getElementById('b-protocol').textContent = location.protocol;
+
+      // Current page title from document.title
+      document.getElementById('b-title').textContent = document.title;
+
+      // Referrer — the page that linked to this one
+      document.getElementById('b-referrer').textContent =
+        document.referrer !== '' ? document.referrer : '(none)';
+    }
+
+    // Prompt user to enter a new title and update document.title dynamically
+    function changeTitle() {
+      var newTitle = prompt('Enter a new page title:', document.title);
+      if (newTitle !== null && newTitle.trim() !== '') {
+        document.title = newTitle.trim();
+        // Reflect the updated title inside the dashboard display
+        document.getElementById('b-title').textContent = document.title;
+      }
+    }
+
+    // ============================================================
+    // PART C — Navigation Controls
+    // Objects used: location, history, window
+    // ============================================================
+
+    function loadPartC() {
+      // history.length — number of entries in the session history
+      document.getElementById('c-history').textContent = history.length;
+
+      // window.innerWidth and innerHeight — current window dimensions
+      document.getElementById('c-winsize').textContent =
+        window.innerWidth + ' x ' + window.innerHeight + ' px';
+
+      // window.scrollX and scrollY — current scroll position
+      document.getElementById('c-scroll').textContent =
+        'X: ' + window.scrollX + '   Y: ' + window.scrollY;
+    }
+
+    // Prompt for a URL then redirect using location.href
+    function redirectPage() {
+      var url = prompt('Enter URL to redirect to:', 'https://www.example.com');
+      if (url && url.trim() !== '') {
+        location.href = url.trim();
+      }
+    }
+
+    // Update scroll position live as the user scrolls
+    window.addEventListener('scroll', function () {
+      var el = document.getElementById('c-scroll');
+      if (el) {
+        el.textContent = 'X: ' + window.scrollX + '   Y: ' + window.scrollY;
+      }
+    });
+
+    // ============================================================
+    // PART D — Dynamic Background Based on Viewport Width
+    // Mobile (<600px): Blue
+    // Tablet (600-991px): Green
+    // Desktop (>=992px): Orange
+    // Triggered on page load AND on every resize/orientation change
+    // ============================================================
+
+    function applyViewportTheme() {
+      var w = window.innerWidth;
+      var device, bgColor, barColor, labelBg, labelColor, themeLabel;
+
+      if (w < 600) {
+        // Mobile — Blue background
+        bgColor    = '#04081a';
+        device     = 'MOBILE';
+        themeLabel = 'Blue — Mobile (<600px)';
+        barColor   = '#4488ff';
+        labelBg    = 'rgba(68,136,255,0.15)';
+        labelColor = '#88aaff';
+
+      } else if (w < 992) {
+        // Tablet — Green background
+        bgColor    = '#031408';
+        device     = 'TABLET';
+        themeLabel = 'Green — Tablet (600-991px)';
+        barColor   = '#22cc44';
+        labelBg    = 'rgba(34,204,68,0.12)';
+        labelColor = '#44ee66';
+
+      } else {
+        // Desktop — Orange background
+        bgColor    = '#110900';
+        device     = 'DESKTOP';
+        themeLabel = 'Orange — Desktop (>=992px)';
+        barColor   = '#ffb700';
+        labelBg    = 'rgba(255,183,0,0.12)';
+        labelColor = '#ffd055';
+      }
+
+      // Apply background colour to the body element
+      document.body.style.backgroundColor = bgColor;
+
+      // Update all Part D display fields
+      document.getElementById('d-width').textContent  = w + ' px';
+      document.getElementById('d-height').textContent = window.innerHeight + ' px';
+      document.getElementById('d-device').textContent = device;
+      document.getElementById('d-theme').textContent  = themeLabel;
+      document.getElementById('d-dpr').textContent    = (window.devicePixelRatio || 1).toFixed(2);
+      document.getElementById('d-orient').textContent =
+        w > window.innerHeight ? 'LANDSCAPE' : 'PORTRAIT';
+
+      // Also keep Part C window size in sync on resize
+      var cs = document.getElementById('c-winsize');
+      if (cs) cs.textContent = w + ' x ' + window.innerHeight + ' px';
+
+      // Update the fixed bottom colour indicator bar
+      var bar = document.getElementById('viewport-bar');
+      var lbl = document.getElementById('viewport-label');
+      bar.style.background    = barColor;
+      lbl.style.background    = labelBg;
+      lbl.style.border        = '1px solid ' + barColor;
+      lbl.style.color         = labelColor;
+      lbl.style.fontFamily    = 'Orbitron, sans-serif';
+      lbl.style.fontSize      = '8px';
+      lbl.style.letterSpacing = '2px';
+      lbl.style.padding       = '4px 10px';
+      lbl.style.borderRadius  = '3px';
+      lbl.textContent         = device + ' // ' + w + 'px';
+    }
+
+    // ============================================================
+    // INIT — Run all loaders after the full page has loaded
+    // ============================================================
+    window.onload = function () {
+      loadPartA();
+      loadPartB();
+      loadPartC();
+      applyViewportTheme();
+    };
+
+    // Re-apply Part D theme on window resize
+    window.addEventListener('resize', applyViewportTheme);
+
+    // Also handle Android orientation change with a short delay
+    window.addEventListener('orientationchange', function () {
+      setTimeout(applyViewportTheme, 300);
+    });
+  </script>
+</body>
+</html>
